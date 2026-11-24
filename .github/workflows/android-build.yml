@@ -1,0 +1,37 @@
+name: Build LeoPrediksi APK
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ambil repository
+        uses: actions/checkout@v4
+
+      - name: Ekstrak file ZIP
+        run: |
+          unzip -o LeoPrediksi-Android-HP-Build.zip -d .
+          test -f LeoPrediksi-Android/settings.gradle.kts
+
+      - name: Siapkan Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Siapkan Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Buat APK
+        run: gradle -p LeoPrediksi-Android assembleDebug
+
+      - name: Simpan APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LeoPrediksi-APK
+          path: LeoPrediksi-Android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
