@@ -35,10 +35,27 @@ jobs:
               '    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }\n',
               ''
           )
+                    p.write_text(s)
+
+          p = root / "app/build.gradle.kts"
+          s = p.read_text()
+          s = s.replace(
+              'sourceCompatibility = JavaVersion.VERSION_1_8',
+              'sourceCompatibility = JavaVersion.VERSION_17'
+          )
+          s = s.replace(
+              'targetCompatibility = JavaVersion.VERSION_1_8',
+              'targetCompatibility = JavaVersion.VERSION_17'
+          )
+          if 'compileOptions {' not in s:
+              s = s.replace(
+                  'android {',
+                  'android {\n    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }',
+                  1
+              )
           p.write_text(s)
           PY
           test -f LeoPrediksi-Android/settings.gradle.kts
-
       - name: Siapkan Java
         uses: actions/setup-java@v4
         with:
