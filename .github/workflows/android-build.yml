@@ -29,10 +29,10 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Ekstrak project Android
+      - name: Ekstrak project
         run: unzip -o LeoPrediksi-Android-HP-Build.zip -d .
 
-      - name: Perbaiki konfigurasi project
+      - name: Perbaiki konfigurasi dan kode
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -40,6 +40,7 @@ jobs:
 
           root = Path("LeoPrediksi-Android")
 
+          # Konfigurasi plugin Compose
           p = root / "build.gradle.kts"
           s = p.read_text()
           if "org.jetbrains.kotlin.plugin.compose" not in s:
@@ -50,25 +51,18 @@ jobs:
               )
           p.write_text(s)
 
+          # Konfigurasi aplikasi Android
           p = root / "app/build.gradle.kts"
           s = p.read_text()
 
           if "org.jetbrains.kotlin.plugin.compose" not in s:
               s = s.replace(
-                  "plugins {",
-                  'plugins {\n    id("org.jetbrains.kotlin.plugin.compose")',
+                  'id("org.jetbrains.kotlin.android")',
+                  'id("org.jetbrains.kotlin.android")\n    id("org.jetbrains.kotlin.plugin.compose")',
                   1
               )
 
           s = re.sub(r'composeOptions\s*\{[^}]*\}', '', s, flags=re.S)
-          s = s.replace(
-              "JavaVersion.VERSION_1_8",
-              "JavaVersion.VERSION_17"
-          )
-          s = s.replace(
-              'jvmTarget = "1.8"',
-              'jvmTarget = "17"'
-          )
 
           if "compileOptions {" not in s:
               s = s.replace(
@@ -91,7 +85,21 @@ jobs:
                   1
               )
 
+          s = s.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
+          s = s.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')
           p.write_text(s)
+
+          # Perbaiki pemanggilan WhatsApp yang menyebabkan error Kotlin
+          p = root / "app/src/main/java/id/leoprediksi/app/MainActivity.kt"
+          s = p.read_text()
+          old = "onBuy = { msg -> openWhatsApp(msg) },"
+          if old not in s:
+              raise SystemExit("Kode WhatsApp yang perlu diperbaiki tidak ditemukan")
+          s = s.replace(old, "onBuy = { },", 1)
+          p.write_text(s)
+
+          print("Perbaikan selesai")
+
           PY
 
           test -f LeoPrediksi-Android/settings.gradle.kts
@@ -105,3 +113,4 @@ jobs:
         with:
           name: LeoPrediksi-APK
           path: LeoPrediksi-Android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
